@@ -2,11 +2,11 @@ PI_ADDR ?= pi@192.168.1.59
 PI_FOLDER ?= ~/
 
 PROGRAMS = altimeter test_lsp25h
-MODULES = src/led_matrix src/lsp25h
+MODULES = src/led_matrix src/lsp25h src/kalman
 LIBS = m
 
 CXX ?= g++
-CXXFLAGS += -Wall -std=c++11
+CXXFLAGS += -Wall -std=c++11 -DEIGEN_INITIALIZE_MATRICES_BY_NAN -DEIGEN_NO_AUTOMATIC_RESIZING
 LDFLAGS += $(addprefix -l, $(LIBS))
 
 BUILD_DIR = build
@@ -26,15 +26,19 @@ endif
 EXES = $(addprefix $(BUILD_DIR)/, $(PROGRAMS))
 OBJS = $(addprefix $(BUILD_DIR)/, $(addsuffix .o, $(MODULES)))
 
-define link-program
-	@echo "  LD" $@
-	@$(CXX) $^ $(LDFLAGS) -o $@
-endef
-
 all : $(EXES)
 	$(info Build directory: $(BUILD_DIR))
 	$(info CXXFLAGS: $(CXXFLAGS))
 	$(info LDFLAGS: $(LDFLAGS))
+
+clean :
+	rm -rvf build
+
+push : $(EXES)
+ifndef PI_ADDR
+	$(error PI_ADDR not defined)
+endif
+	scp -r $^ $(PI_ADDR):$(PI_FOLDER)
 
 # dependencies
 
@@ -51,19 +55,15 @@ include $(subst .o,.d, $(OBJS))
 
 # build
 
+define link-program
+	@echo "  LD" $@
+	@$(CXX) $^ $(LDFLAGS) -o $@
+endef
+
 $(BUILD_DIR)/%.o : %.cc $(BUILD_DIR)/%.d Makefile | $(BUILD_DIR)
 	@echo "  CXX" $<
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/% : $(BUILD_DIR)/src/%.o $(OBJS)
 	$(link-program)
-
-push : $(EXES)
-ifndef PI_ADDR
-	$(error PI_ADDR not defined)
-endif
-	scp -r $^ $(PI_ADDR):$(PI_FOLDER)
-
-clean :
-	rm -rvf build
 

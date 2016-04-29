@@ -1,6 +1,6 @@
 #include "led_matrix.h"
 #include "lsp25h.h"
-#include <cstdio>
+#include "kalman.h"
 #include <cstdlib>
 #include <cmath>
 #include <chrono>
@@ -12,33 +12,30 @@ int main(void)
 {
     using Clock = std::chrono::high_resolution_clock;
     using Duration = Clock::duration;
+    using std::chrono::duration_cast;
 
     const Duration dt = std::chrono::milliseconds(100);
 
     Lsp25h lsp25h;
     LedMatrix led_matrix;
+    KalmanFilter filter;
 
+    bool zeroed = false;
     const time_t start_t = time(NULL);
-    double pressure_zero = 0;
-    double altitude_zero = 0;
 
     while (1) {
         auto start = Clock::now();
 
-        double pressure = lsp25h.read_pressure();
-        double temp = lsp25h.read_temp();
+        float pressure = lsp25h.read_pressure();
+        float temp = lsp25h.read_temp();
 
-        // US Standard Atmosphere formula, see section 6.4 of the LSP25H app note
-        double altitude = (1.0 - pow(pressure/1013.25, 0.190284))*145366.45/3.280839895;
-        altitude = std::max(0.0, altitude - altitude_zero);
+        filter(pressure, temp + 273.15, duration_cast<std::chrono::duration<float>>(dt).count());
+        float altitude = filter.state().altitude();
 
-        // Hypsometric equation: https://en.wikipedia.org/wiki/Hypsometric_equation
-        double altitude_hypso = log(pressure_zero / pressure) * 8.3144621 * (temp + 273.15) / (9.80665 * 0.028965338);
-
-        std::cout << std::fixed << "P = " << std::setprecision(2) << pressure << " hPa; "
+        std::cout << std::fixed
+            << "P = " << std::setprecision(2) << pressure << " hPa; "
             << "T = " << std::setprecision(1) << temp << " \u00B0C; "
-            << "Alt(P) = " << std::setprecision(1) << altitude << " m; "
-            << "Alt(P, T) = " << std::setprecision(1) << altitude_hypso << " m" << std::endl;
+            << "H = " << std::setprecision(1) << altitude << " m" << std::endl;
 
         // show current level on the led screen
         led_matrix.set(0, 0, 0);
@@ -50,12 +47,11 @@ int main(void)
         }
 
         // set offset to current value after a few seconds
-        if (altitude_zero == 0 && time(NULL) - start_t > 5)
+        if (!zeroed && time(NULL) - start_t > 5)
         {
-            pressure_zero = pressure;
-            altitude_zero = altitude;
-            std::cout << "Pressure of reference = " << pressure_zero <<
-                ", altitude of reference = " << altitude_zero << std::endl;;
+            zeroed = true;
+            filter.ref_pressure() = pressure;
+            std::cout << "Pressure of reference = " << pressure << std::endl;
         }
 
         auto stop = Clock::now();
