@@ -1,7 +1,7 @@
 PI_ADDR ?= pi@192.168.1.59
 PI_FOLDER ?= ~/
 
-PROGRAMS = altimeter test_lsp25h
+PROGRAMS = altimeter test_lsp25h calib
 MODULES = src/led_matrix src/lsp25h src/kalman
 LIBS = m
 
