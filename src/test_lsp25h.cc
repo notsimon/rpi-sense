@@ -22,8 +22,8 @@ int main(void)
         double pressure = lsp25h.read_pressure();
         double temp = lsp25h.read_temp();
 
-        std::cout << std::fixed << std::setprecision(3) << pressure
-            << ", " << std::setprecision(2) << temp << std::endl;
+        std::cout << std::fixed << std::setprecision(4) << pressure
+            << ", " << std::setprecision(4) << temp << std::endl;
 
         auto stop = Clock::now();
         auto remaining = dt - (stop - start);
