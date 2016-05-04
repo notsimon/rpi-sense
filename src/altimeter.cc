@@ -7,6 +7,8 @@
 #include <thread>
 #include <iostream>
 #include <iomanip>
+#include <limits>
+#include <cmath>
 
 int main(void)
 {
@@ -19,8 +21,8 @@ int main(void)
     LedMatrix led_matrix;
 
     const time_t start_t = time(NULL);
-    double pressure_zero = 0;
-    double altitude_zero = 0;
+    double pressure_zero = std::numeric_limits<double>::infinity();
+    double altitude_zero = std::numeric_limits<double>::infinity();
 
     while (1) {
         auto start = Clock::now();
@@ -30,7 +32,10 @@ int main(void)
 
         // US Standard Atmosphere formula, see section 6.4 of the LSP25H app note
         double altitude = (1.0 - pow(pressure/1013.25, 0.190284))*145366.45/3.280839895;
-        altitude = std::max(0.0, altitude - altitude_zero);
+
+        if (std::isfinite(altitude_zero)) {
+            altitude = std::max(0.0, altitude - altitude_zero);
+        }
 
         // Hypsometric equation: https://en.wikipedia.org/wiki/Hypsometric_equation
         double altitude_hypso = log(pressure_zero / pressure) * 8.3144621 * (temp + 273.15) / (9.80665 * 0.028965338);
@@ -45,13 +50,12 @@ int main(void)
         const size_t n = std::min<size_t>(std::round(altitude/2.0*LedMatrix::Height), LedMatrix::Height);
         for (size_t x = 0; x < LedMatrix::Width; x++) {
             for (size_t y = 0; y < n; y++) {
-                led_matrix.set(x, y, std::rand() % 255, std::rand() % 255, std::rand() % 255);
+                led_matrix.set(x, y, 255, 0, 0);
             }
         }
 
         // set offset to current value after a few seconds
-        if (altitude_zero == 0 && time(NULL) - start_t > 5)
-        {
+        if (std::isinf(altitude_zero) && std::isinf(pressure_zero) && time(NULL) - start_t > 5) {
             pressure_zero = pressure;
             altitude_zero = altitude;
             std::cout << "Pressure of reference = " << pressure_zero <<
