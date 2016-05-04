@@ -29,12 +29,15 @@ int main(void)
         float pressure = lsp25h.read_pressure();
         float temp = lsp25h.read_temp();
 
-        filter(pressure, temp + 273.15, duration_cast<std::chrono::duration<float>>(dt).count());
+        if (zeroed) {
+            filter(pressure, temp + 273.15, duration_cast<std::chrono::duration<float>>(dt).count());
+        }
+
         float altitude = filter.state().altitude();
 
         std::cout << std::fixed
             << "P = " << std::setprecision(2) << pressure << " hPa; "
-            << "T = " << std::setprecision(1) << temp << " \u00B0C; "
+            << "T = " << std::setprecision(1) << temp << " \u00B0C (" << temp + 273.15 << " \u00B0K); "
             << "H = " << std::setprecision(1) << altitude << " m" << std::endl;
 
         // show current level on the led screen
@@ -42,13 +45,12 @@ int main(void)
         const size_t n = std::min<size_t>(std::round(altitude/2.0*LedMatrix::Height), LedMatrix::Height);
         for (size_t x = 0; x < LedMatrix::Width; x++) {
             for (size_t y = 0; y < n; y++) {
-                led_matrix.set(x, y, std::rand() % 255, std::rand() % 255, std::rand() % 255);
+                led_matrix.set(x, y, 156 + std::rand() % 100, 0, 0);
             }
         }
 
         // set offset to current value after a few seconds
-        if (!zeroed && time(NULL) - start_t > 5)
-        {
+        if (!zeroed && time(NULL) - start_t > 2) {
             zeroed = true;
             filter.ref_pressure() = pressure;
             std::cout << "Pressure of reference = " << pressure << std::endl;

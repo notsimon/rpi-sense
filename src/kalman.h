@@ -4,9 +4,9 @@
 
 class KalmanFilter {
 public:
-    class StateVector : public Eigen::Matrix<float, 4, 1> {
+    class StateVector : public Eigen::Matrix<float, 3, 1> {
     public:
-        typedef Eigen::Matrix<float, 4, 1> Base;
+        typedef Eigen::Matrix<float, 3, 1> Base;
 
         StateVector(void) : Base() {}
 
@@ -33,7 +33,7 @@ public:
         DEFINE_ACCESSORS(altitude,           0);
         DEFINE_ACCESSORS(pressure,           1);
         DEFINE_ACCESSORS(temperature,        2);
-        DEFINE_ACCESSORS(temperature_offset, 3);
+        //DEFINE_ACCESSORS(temperature_offset, 3);
 #undef DEFINE_ACCESSORS
     };
     typedef Eigen::Matrix<float, StateVector::RowsAtCompileTime, StateVector::RowsAtCompileTime> StateCovMatrix;
@@ -51,6 +51,4 @@ private:
     float ref_pressure_ = 1008.30;
     StateVector state_;
     StateCovMatrix cov_;
-    StateCovMatrix process_noise_;
-    MeasureCovMatrix measure_noise_;
 };
