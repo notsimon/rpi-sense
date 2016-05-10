@@ -28,16 +28,15 @@ int main(void)
 
         float pressure = lsp25h.read_pressure();
         float temp = lsp25h.read_temp();
+        temp = 20;
 
-        if (zeroed) {
-            filter(pressure, temp + 273.15, duration_cast<std::chrono::duration<float>>(dt).count());
-        }
+        filter(pressure, temp + 273.15, duration_cast<std::chrono::duration<float>>(dt).count());
 
         float altitude = filter.state().altitude();
 
-        std::cout << std::fixed
+        std::cout << std::fixed << std::endl
             << "P = " << std::setprecision(2) << pressure << " hPa; "
-            << "T = " << std::setprecision(1) << temp << " \u00B0C (" << temp + 273.15 << " \u00B0K); "
+            << "T = " << std::setprecision(2) << temp << " \u00B0C (" << temp + 273.15 << " \u00B0K); "
             << "H = " << std::setprecision(1) << altitude << " m" << std::endl;
 
         // show current level on the led screen
@@ -50,9 +49,10 @@ int main(void)
         }
 
         // set offset to current value after a few seconds
-        if (!zeroed && time(NULL) - start_t > 2) {
+        if (!zeroed && time(NULL) - start_t > 5) {
             zeroed = true;
-            filter.ref_pressure() = pressure;
+            filter.ref_pressure() = filter.state().pressure();
+            led_matrix.set(255, 255, 255);
             std::cout << "Pressure of reference = " << pressure << std::endl;
         }
 

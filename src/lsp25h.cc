@@ -56,7 +56,7 @@ Lsp25h::Lsp25h() {
     std::this_thread::sleep_for(std::chrono::milliseconds(15));
 
     // Setup averaging
-    //i2c_smbus_write_byte_data(fd_, RES_CONF, 0x0f); // max ADC HW average
+    i2c_smbus_write_byte_data(fd_, RES_CONF, 0x0f); // max ADC HW average
     i2c_smbus_write_byte_data(fd_, FIFO_CTRL, 0xcf); // FIFO moving mean
     i2c_smbus_write_byte_data(fd_, CTRL_REG2, CTRL_REG2__FIFO_EN);
 
